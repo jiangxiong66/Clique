@@ -20,12 +20,12 @@ public:
 		arr.insert(element);
 	}
 
-	void cover(T element) {
+	void erase(T element) {
 		arr.erase(element);
 	}
 
-	void uncover(T element) {
-		add(element);
+	void clear(void) {
+		arr.clear();
 	}
 
 	bool empty(void) {
@@ -49,6 +49,25 @@ public:
 		index_to_id(vector<int>(_msize, _msize)),
 		id_to_index(vector<int>(_msize, _msize)) {
 
+	}
+
+	T operator [](int idx) const {
+		return arr[idx];
+	}
+
+	T at(int idx) {
+		if(idx<0 || idx>=tp) idx = 0;
+		return arr[idx];
+	}
+
+	void clear(void) {
+		tp = 0;
+		index_to_id = vector<int>(msize, msize);
+		id_to_index = vector<int>(msize, msize);
+	}
+
+	bool empty(void) {
+		return tp==0;
 	}
 
 	void pop(void) {
@@ -84,6 +103,7 @@ public:
 
 	void remove(unsigned int id) {
 		int tid = index_to_id[tp-1];
+		if(id >= msize || id_to_index[id] >= msize) return ;
 		swap_by_id(id, tid);
 		pop();
 	}
