@@ -15,22 +15,6 @@ string fn_main = "main";
 vector<string> fn_list{fn_main};
 RunMeasurer rm(fn_list);
 
-void ansOutput(vector<int>& ans, int v_num) {
-	vector<bool> mis(v_num+1,true);
-	for(int x : ans) {
-		mis[x] = false;
-	}
-	vector<int> temp;
-	for(int i=1; i<mis.size(); i++) {
-		if(mis[i]) temp.push_back(i);
-	}
-	stringstream os;
-	os << "MIS size : " << temp.size() << endl;
-	for(int x : temp) os << x << " ";
-	os << endl;
-	Log(os);
-}
-
 int main(int argc, char* argv[]) {
 	if (argc < 5) {
 		cout << "usage: " << endl;
@@ -50,7 +34,7 @@ int main(int argc, char* argv[]) {
 	Graph graph = readMVCGraph(argv[1]);
 	MvcSolver mvc_solver(graph);
 	vector<int> ans = mvc_solver.solveMvc(cutoff_time, optimal_size, 0.5, seed);
-	ansOutput(ans, graph.v_num);
+	OutputCoMvc(ans, graph.v_num);
 	//graph.output();
 
 	if(graph.isCoveredBy(ans)) {

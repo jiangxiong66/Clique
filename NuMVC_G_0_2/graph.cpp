@@ -2,12 +2,32 @@
 
 #include <vector>
 #include <fstream>
+#include <sstream>
 #include <iostream>
+
+#include "mylog.h"
 
 using std::string;
 using std::cout;
 using std::endl;
 using std::ifstream;
+using std::stringstream;
+
+void OutputCoMvc(vector<int>& ans, int v_num) {
+	vector<bool> mis(v_num+1,true);
+	for(int x : ans) {
+		mis[x] = false;
+	}
+	vector<int> temp;
+	for(int i=1; i<mis.size(); i++) {
+		if(mis[i]) temp.push_back(i);
+	}
+	stringstream os;
+	os << "MIS size : " << temp.size() << endl;
+	for(int x : temp) os << x << " ";
+	os << endl;
+	Log(os);
+}
 
 Graph readMVCGraph(const char *filename) {
 	ifstream input;

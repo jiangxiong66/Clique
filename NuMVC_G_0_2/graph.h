@@ -5,6 +5,8 @@
 
 using std::vector;
 
+void OutputCoMvc(vector<int>& ans, int v_num);
+
 struct Edge {
 	int from, to, weight;
 	Edge(int _from, int _to): from(_from), to(_to), weight(1) {

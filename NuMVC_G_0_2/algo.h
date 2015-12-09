@@ -31,27 +31,35 @@ private:
 
 private:
 	static const double p_scale;
+	static const int try_step;
 	static const int IN_TO_VC;
 	static const int OUT_FROM_VC;
 
 private:
+	int delta_total_weight, ave_weight;
 	vector<int> is_coverd;
 
+	vector<int> getMvcGreedly(void);
 	vector<int> calculateMVC(void);
+	
+	vector<int> get_mvc_vector(void);
+	
 	void initialize_weight_dscore_stamp(void);
+	
 	void remove_vertex_from_vc(Estack<int>& uncoverd_edges, int v, Eheap<int>* vertex_heap = nullptr);
 	void add_vertex_to_vc(Estack<int>& uncoverd_edges, int v, Eheap<int>* vertex_heap = nullptr);
-	void move_vertex(int direction, Estack<int>& uncoverd_edges, int v, Eheap<int>* vertex_heap = nullptr);
-	vector<int> getMvcGreedly(void);
+	
+	int max_dscore_coverd_vertex(void);
+	int earliest_max_dscore_coverd_vertex(int tabu_v);
+	int luckly_uncoverd_vertex(Estack<int> uncoverd_edges);
+	
+	void updateWeight(Estack<int>& uncoverd_edges);
+	void forget_edge_weights(void);
 
 public:
 	MvcSolver(const Graph& _graph):
 		graph( _graph ),
-		v_num( _graph.v_num ), e_num( _graph.e_num ),
-		dscore     ( vector<int>(_graph.v_num+1, 0) ),
-		conf_change( vector<int>(_graph.v_num+1, 0) ),
-		time_stamp ( vector<int>(_graph.v_num+1, 0) ),
-		edge_weight( vector<int>(_graph.e_num, 0) ) { };
+		v_num( _graph.v_num ), e_num( _graph.e_num ) { };
 
 	~MvcSolver() {};
 

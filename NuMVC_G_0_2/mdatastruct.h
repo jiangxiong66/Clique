@@ -5,6 +5,8 @@
 #include <set>
 #include <algorithm>
 
+#include "mylog.h"
+
 using std::swap;
 using std::vector;
 using std::cout;
@@ -52,6 +54,7 @@ public:
 	}
 
 	T operator [](int idx) const {
+		if(idx<0 || idx >= msize) Log("Estack access voliate\n");
 		return arr[idx];
 	}
 
@@ -265,6 +268,19 @@ public:
 			diveDown(idx);
 		}
 		id_to_heap_idx[id] = 0;
+	}
+
+	int at(int idx) const {
+		if(idx<0 || idx>=last) idx=0;
+		return heap[idx+1];
+	}
+
+	int operator [] (int idx) const {
+		return heap[idx+1];
+	}
+
+	int size(void) const {
+		return last+1;
 	}
 
 	void output(void) {
