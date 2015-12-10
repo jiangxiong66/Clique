@@ -23,6 +23,16 @@ namespace algo{
 	auto int_greater = [](const int& lhs, const int& rhs) {
 	return lhs > rhs;
 	};
+
+	auto dscore_greater = [](const NodeWType& lhs, const NodeWType& rhs) {
+		return lhs.dscore > rhs.dscore;
+	};
+
+	auto node_greater = [](const NodeWType& lhs, const NodeWType& rhs) {
+		if(lhs.conf_change != rhs.conf_change) return lhs.conf_change < rhs.conf_change;
+		if(lhs.dscore != rhs.dscore) return lhs.dscore > lhs.dscore;
+		return lhs.time_stamp < rhs.time_stamp;
+	};
 }
 
 vector<int> MvcSolver::get_mvc_vector(void) {
@@ -34,20 +44,18 @@ vector<int> MvcSolver::get_mvc_vector(void) {
 }
 
 void MvcSolver::initialize_weight_dscore_stamp(void) {
-	dscore = vector<int>(v_num+1, 0);
-	time_stamp = vector<int>(v_num+1, 0);
-	conf_change = vector<int>(v_num+1, 0);
+	node_weight = vector<NodeWType>(v_num+1);
 	edge_weight = vector<int>(e_num+1, 1);
 	for(int i=0; i<e_num; i++) {
 		int u = graph.edges[i].from;
 		int v = graph.edges[i].to;
-		dscore[u] += edge_weight[i];
-		dscore[v] += edge_weight[i];
+		node_weight[u].dscore += edge_weight[i];
+		node_weight[v].dscore += edge_weight[i];
 	}
 }
 
-void MvcSolver::add_vertex_to_vc(Estack<int>& uncoverd_edges, int v, Eheap<int>* vertex_heap) {
-	dscore[v] = -dscore[v];
+void MvcSolver::add_vertex_to_vc(Estack<int>& uncoverd_edges, int v, Eheap<NodeWType>* vertex_heap) {
+	node_weight[v].dscore = -node_weight[v].dscore;
 	is_coverd[v] = 1;
 	if(vertex_heap) vertex_heap->remove(v);
 	const Node& node = graph.nodes[v];
@@ -57,20 +65,20 @@ void MvcSolver::add_vertex_to_vc(Estack<int>& uncoverd_edges, int v, Eheap<int>*
 		int neighbor_e = node.neighbor_edges[i];
 
 		if(!is_coverd[neighbor_v]) {
-			dscore[neighbor_v] -= edge_weight[neighbor_e];
-			conf_change[neighbor_v] = 1;
+			node_weight[neighbor_v].dscore -= edge_weight[neighbor_e];
+			node_weight[neighbor_v].conf_change = 1;
 			uncoverd_edges.remove(neighbor_e);
 			if(vertex_heap) vertex_heap->updateWeight(neighbor_v);
 		} else {
-			dscore[neighbor_v] += edge_weight[neighbor_e];
+			node_weight[neighbor_v].dscore += edge_weight[neighbor_e];
 		}
 	}
 }
 
-void MvcSolver::remove_vertex_from_vc(Estack<int>& uncoverd_edges, int v, Eheap<int>* vertex_heap) {
-	dscore[v] = -dscore[v];
+void MvcSolver::remove_vertex_from_vc(Estack<int>& uncoverd_edges, int v, Eheap<NodeWType>* vertex_heap) {
+	node_weight[v].dscore = -node_weight[v].dscore;
 	is_coverd[v] = 0;
-	conf_change[v] = 0;
+	node_weight[v].conf_change = 0;
 	if(vertex_heap) vertex_heap->push(v);
 	const Node& node = graph.nodes[v];
 	int neighbor_num = node.neighbor_nodes.size();
@@ -83,14 +91,14 @@ void MvcSolver::remove_vertex_from_vc(Estack<int>& uncoverd_edges, int v, Eheap<
 		//if(is_coverd[e_u] + is_coverd[e_v] == 0) uncoverd_edges.push(neighbor_e, neighbor_e);
 
 		if(!is_coverd[neighbor_v]) {
-			dscore[neighbor_v] += edge_weight[neighbor_e];
-			conf_change[neighbor_v] = 1;
+			node_weight[neighbor_v].dscore += edge_weight[neighbor_e];
+			node_weight[neighbor_v].conf_change = 1;
 			uncoverd_edges.push(neighbor_e, neighbor_e);
 			if(vertex_heap)  {
 				vertex_heap->updateWeight(neighbor_v);
 			}
 		} else {
-			dscore[neighbor_v] -= edge_weight[neighbor_e];
+			node_weight[neighbor_v].dscore -= edge_weight[neighbor_e];
 		}
 	}
 }
@@ -98,7 +106,7 @@ void MvcSolver::remove_vertex_from_vc(Estack<int>& uncoverd_edges, int v, Eheap<
 vector<int> MvcSolver::getMvcGreedly(void) {
 	fill(is_coverd.begin(), is_coverd.end(), 0);
 	
-	Eheap<int> uncoverd_vertexs(&dscore, algo::int_greater);
+	Eheap<NodeWType> uncoverd_vertexs(&node_weight, algo::dscore_greater);
 	for(int i=1; i<=v_num; i++) {
 		uncoverd_vertexs.push(i);
 	}
@@ -116,7 +124,7 @@ vector<int> MvcSolver::getMvcGreedly(void) {
 		
 		#ifdef DEBUG
 		stringstream os;
-		os << "best_canditate : " << best_canditate << " dscore : " << dscore[best_canditate] << endl;
+		os << "best_canditate : " << best_canditate << " dscore : " << node_weight[best_canditate].dscore << endl;
 		Log(os);
 		#endif
 		
@@ -131,8 +139,8 @@ int MvcSolver::max_dscore_coverd_vertex(void) {
 	int max_dscore = std::numeric_limits<int>::min();
 	int midx = 0;
 	for(int i=1; i<=v_num; i++) {
-		if(is_coverd[i] && dscore[i]>max_dscore) {
-			max_dscore = dscore[i];
+		if(is_coverd[i] && node_weight[i].dscore>max_dscore) {
+			max_dscore = node_weight[i].dscore;
 			midx = i;
 		}
 	}
@@ -149,11 +157,11 @@ int MvcSolver::earliest_max_dscore_coverd_vertex(int tabu_v) {
 	}
 	for(int i=best_canditate+1; i<=v_num; i++) {
 		if(!is_coverd[i] || i==tabu_v) continue;
-		if(dscore[i] < dscore[best_canditate]) continue;
-		if(dscore[i] > dscore[best_canditate]) {
+		if(node_weight[i].dscore < node_weight[best_canditate].dscore) continue;
+		if(node_weight[i].dscore > node_weight[best_canditate].dscore) {
 			best_canditate = i;
 		} else {
-			if(time_stamp[i] < time_stamp[best_canditate]) best_canditate = i;
+			if(node_weight[i].time_stamp < node_weight[best_canditate].time_stamp) best_canditate = i;
 		}
 	}
 	return best_canditate;
@@ -163,17 +171,20 @@ int MvcSolver::luckly_uncoverd_vertex(Estack<int> uncoverd_edges) {
 	int e_id = uncoverd_edges[rand()%uncoverd_edges.size()];
 	int u = graph.edges[e_id].from;
 	int v = graph.edges[e_id].to;
-	if(conf_change[u]) return u;
-	if(conf_change[v]) return v;
-	if(dscore[u] > dscore[v]) return u;
-	if(dscore[u] < dscore[v]) return v;
-	if(time_stamp[u] < time_stamp[v]) return u;
+	if(node_weight[u].conf_change) return u;
+	if(node_weight[v].conf_change) return v;
+	if(node_weight[u].dscore > node_weight[v].dscore) return u;
+	if(node_weight[u].dscore < node_weight[v].dscore) return v;
+	if(node_weight[u].time_stamp < node_weight[v].time_stamp) return u;
 	return v;
 }
 
 void MvcSolver::forget_edge_weights(void) {
 	int new_total_weight = 0;
-	fill(dscore.begin(), dscore.end(), 0);
+	for(auto &x : node_weight) {
+		x.dscore = 0;
+	}
+	
 	for(int i=0; i<e_num; i++) {
 		edge_weight[i] *= p_scale;
 		new_total_weight += edge_weight[i];
@@ -181,12 +192,12 @@ void MvcSolver::forget_edge_weights(void) {
 		int u = graph.edges[i].from;
 		int v = graph.edges[i].to;
 		if(is_coverd[u] + is_coverd[v] == 0) {
-			dscore[u] += edge_weight[i];
-			dscore[v] += edge_weight[i];
+			node_weight[u].dscore += edge_weight[i];
+			node_weight[v].dscore += edge_weight[i];
 		}
 		if(is_coverd[u] + is_coverd[v] == 1) {
-			if(is_coverd[u]) dscore[u] -= edge_weight[i];
-			else dscore[v] -= edge_weight[i];
+			if(is_coverd[u]) node_weight[u].dscore -= edge_weight[i];
+			else node_weight[v].dscore -= edge_weight[i];
 		}
 	}
 	ave_weight = new_total_weight / e_num;
@@ -198,8 +209,8 @@ void MvcSolver::updateWeight(Estack<int>& uncoverd_edges) {
 		int e_id = uncoverd_edges[i];
 		Edge e = graph.edges[e_id];
 		++edge_weight[e_id];
-		++dscore[e.from];
-		++dscore[e.to];
+		++node_weight[e.from].dscore;
+		++node_weight[e.to].dscore;
 	}
 	delta_total_weight += uncoverd_edge_num;
 	if(delta_total_weight >= e_num) {
@@ -216,13 +227,15 @@ vector<int> MvcSolver::calculateMVC(void) {
 	vector<int> ans = getMvcGreedly();
 	
 	Estack<int> uncoverd_edges(e_num+1);
-	Eheap<int> uncoverd_vertexs(&dscore, algo::int_greater);
+	Eheap<NodeWType> uncoverd_vertexs(&node_weight, algo::dscore_greater);
+	Eheap<NodeWType> coverd_vertexs(&node_weight, algo::node_greater);
 	fill(is_coverd.begin(), is_coverd.end(), 0);
 	for(auto x : ans) {
 		is_coverd[x] = 1;
 	}
 	for(int i=1; i<is_coverd.size(); i++) {
 		if(!is_coverd[i]) uncoverd_vertexs.push(i);
+		else coverd_vertexs.push(i);
 	}
 
 	int step = 1;

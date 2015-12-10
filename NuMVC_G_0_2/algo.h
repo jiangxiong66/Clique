@@ -12,6 +12,16 @@
 
 using std::vector;
 
+struct NodeWType{
+	int dscore;
+	int conf_change;
+	int time_stamp;
+	NodeWType(int _dscore=0, int _time_stamp=0, int _conf_change=0):
+		dscore(_dscore),
+		time_stamp(_time_stamp),
+		conf_change(_conf_change) {};
+};
+
 class MvcSolver
 {
 private:
@@ -24,10 +34,8 @@ private:
 private:
 	const Graph graph;
 	const int v_num, e_num;
-	vector<int> dscore;
 	vector<int> edge_weight;
-	vector<int> conf_change;
-	vector<int> time_stamp;
+	vector<NodeWType> node_weight;
 
 private:
 	static const double p_scale;
@@ -46,8 +54,8 @@ private:
 	
 	void initialize_weight_dscore_stamp(void);
 	
-	void remove_vertex_from_vc(Estack<int>& uncoverd_edges, int v, Eheap<int>* vertex_heap = nullptr);
-	void add_vertex_to_vc(Estack<int>& uncoverd_edges, int v, Eheap<int>* vertex_heap = nullptr);
+	void remove_vertex_from_vc(Estack<int>& uncoverd_edges, int v, Eheap<NodeWType>* vertex_heap = nullptr);
+	void add_vertex_to_vc(Estack<int>& uncoverd_edges, int v, Eheap<NodeWType>* vertex_heap = nullptr);
 	
 	int max_dscore_coverd_vertex(void);
 	int earliest_max_dscore_coverd_vertex(int tabu_v);
